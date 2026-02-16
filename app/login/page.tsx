@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
+import LoginSVGComponent from "@/components/ui/LoginSVGComponent";
 
 export default function LoginPage() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans relative flex items-center justify-center overflow-hidden selection:bg-primary/20">
+        
       
       {/* Background Patterns */}
       <div className="fixed inset-0 bg-grid-pattern z-0 pointer-events-none" />
@@ -39,9 +41,17 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-md relative z-10 px-6"
       >
-        <div className="border border-border bg-card/50 backdrop-blur-xl p-8 md:p-12 relative overflow-hidden group">
+        <motion.div
+            initial={{ opacity: 0, filter: "blur(20px)" }}
+            animate={{ opacity: 0.6, filter: "blur(0px)" }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[-10] w-[800px] h-[800px] pointer-events-none"
+        >
+            <LoginSVGComponent className="w-full h-full animate-spin-slow text-foreground" />
+        </motion.div>
+        <div className="border border-border bg-card/50 backdrop-blur-2xl p-8 md:p-12 relative overflow-hidden group">
             
-            {/* Corner Accents */}
+            
             <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary opacity-50" />
             <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-primary opacity-50" />
             <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-primary opacity-50" />

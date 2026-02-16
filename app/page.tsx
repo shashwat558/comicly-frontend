@@ -9,15 +9,17 @@ import {
     SparklesIcon, 
     CpuChipIcon,
     SwatchIcon,
-    RectangleStackIcon,
     ServerStackIcon,
     EyeIcon,
     CheckCircleIcon,
-    UserIcon
 } from "@heroicons/react/24/outline";
-import { motion, useScroll, useTransform, useInView, Variants } from "framer-motion";
-import { useRef, useEffect, useState } from "react";
+import { motion, useScroll, useTransform, Variants } from "framer-motion";
 import HeroSvgComponent from "@/components/ui/HeroSvgComponent";
+import { FeatureCard } from "@/components/landing/FeatureCard";
+import { PipelineStep } from "@/components/landing/PipelineStep";
+import { Badge } from "@/components/landing/Badge";
+import { GalleryItem } from "@/components/landing/GalleryItem";
+import { TextScrambleBlur } from "@/components/ui/text-scramble";
 
 // --- Animation Variants ---
 
@@ -94,10 +96,12 @@ export default function LandingPage() {
              ))}
         </div>
         <div className="flex gap-4 items-center">
-            <Button variant="ghost" className="hidden md:flex text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
-                Login
-            </Button>
-            <Link href="/reader">
+            <Link href="/login">
+                <Button variant="ghost" className="hidden md:flex text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
+                    Login
+                </Button>
+            </Link>
+            <Link href="/reader/1">
                  <Button variant="outline" className="h-9 px-4 text-xs font-mono uppercase tracking-wider border-border bg-background/50 hover:bg-secondary/50 hover:text-primary hover:border-primary/30 transition-all duration-300">
                     Enter Dashboard
                  </Button>
@@ -153,7 +157,7 @@ export default function LandingPage() {
                 </motion.p>
 
                 <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 w-full max-w-md mx-auto mb-24 relative z-10">
-                    <Link href="/reader" className="w-full group">
+                    <Link href="/reader/1" className="w-full group">
                         <Button className="w-full h-12 text-sm font-mono uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 rounded-none transition-all duration-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] group-hover:translate-x-[2px] group-hover:translate-y-[2px] group-hover:shadow-none hover:ring-2 hover:ring-primary/20">
                             Initialise Context
                             <ArrowUpRightIcon className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
@@ -433,137 +437,4 @@ export default function LandingPage() {
       </footer>
     </div>
   );
-}
-
-// Components
-
-function TextScrambleBlur({ text, className }: { text: string, className?: string }) {
-    return (
-        <span className={`${className} relative`}>
-            {text.split('').map((char, i) => (
-                <motion.span
-                    key={i}
-                    initial={{ filter: 'blur(10px)', opacity: 0 }}
-                    animate={{ filter: 'blur(0px)', opacity: 1 }}
-                    transition={{ 
-                        duration: 0.8, 
-                        delay: 0.5 + (i * 0.1),
-                        ease: "easeOut"
-                    }}
-                    className="inline-block"
-                >
-                    {char === ' ' ? '\u00A0' : char}
-                </motion.span>
-            ))}
-        </span>
-    );
-}
-
-function FeatureCard({ icon: Icon, title, desc, stat, statLabel, delay }: { icon: any, title: string, desc: string, stat: string, statLabel: string, delay?: number }) {
-    return (
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay }}
-            whileHover={{ y: -5 }}
-            className="group p-8 transition-all hover:bg-card/80 bg-background/60 backdrop-blur-sm relative flex flex-col items-center md:items-start text-center md:text-left hover:z-10 border border-transparent hover:border-primary/10 rounded-sm"
-        >
-            <div className="w-full flex justify-between items-start mb-6">
-                <div className="w-12 h-12 border border-border flex items-center justify-center bg-background group-hover:bg-primary group-hover:text-primary-foreground transform group-hover:scale-110 transition-all duration-300 rounded-sm shadow-sm">
-                    <Icon className="w-6 h-6 transition-colors" />
-                </div>
-                <div className="text-right opacity-0 group-hover:opacity-100 transition-opacity -translate-y-2 group-hover:translate-y-0 duration-300">
-                    <span className="block text-xl font-bold font-mono text-primary">{stat}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{statLabel}</span>
-                </div>
-            </div>
-            
-            <h3 className="text-sm font-bold uppercase tracking-wider mb-3 text-foreground group-hover:text-primary transition-colors">{title}</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed font-light">{desc}</p>
-        </motion.div>
-    )
-}
-
-function PipelineStep({ step, title, icon: Icon, status, desc, delay }: { step: string, title: string, icon: any, status: string, desc: string, delay?: number }) {
-    return (
-        <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay }}
-            className="relative z-10 bg-background border border-border p-6 flex flex-col gap-4 group hover:border-primary/50 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-[0_8px_30px_rgb(255,255,255,0.01)] hover:-translate-y-1 duration-500"
-        >
-            <div className="flex justify-between items-start">
-                <span className="font-mono text-xs text-muted-foreground/50 group-hover:text-primary transition-colors">{step}</span>
-                <div className="p-2 border border-border bg-secondary/10 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 rounded-sm">
-                    <Icon className="w-5 h-5" />
-                </div>
-            </div>
-            
-            <div className="pt-4 border-t border-border/50 group-hover:border-primary/20 transition-colors">
-                <h3 className="text-lg font-bold uppercase mb-1 tracking-tight">{title}</h3>
-                <span className="text-[10px] font-mono uppercase tracking-widest text-primary block mb-3 bg-primary/5 w-fit px-2 py-0.5 rounded-sm">{status}</span>
-                <p className="text-xs text-muted-foreground leading-relaxed font-light">
-                    {desc}
-                </p>
-            </div>
-        </motion.div>
-    )
-}
-
-function Badge({ label, delay }: { label: string, delay?: number }) {
-    return (
-        <motion.span 
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.3, delay }}
-            className="px-2 py-1 border border-border/60 text-[10px] font-mono uppercase tracking-wider text-muted-foreground bg-background hover:border-primary/50 hover:text-primary transition-colors cursor-default"
-        >
-            {label}
-        </motion.span>
-    )
-}
-
-function GalleryItem({ label, sub, color, className, index }: { label: string, sub?: string, color: string, className?: string, index?: number }) {
-    return (
-        <motion.div 
-            variants={{
-                hidden: { opacity: 0, y: 20 },
-                show: { opacity: 1, y: 0 }
-            }}
-            className={`h-80 md:h-96 w-full flex items-center justify-center relative group overflow-hidden ${className} ${color} transition-colors duration-500`}
-        >
-            {/* Pattern Overlay */}
-            <div className="absolute inset-0 bg-dots-pattern opacity-[0.03] group-hover:opacity-[0.07] transition-opacity" />
-            
-            {/* Center Action (Hidden initially) */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 transform scale-90 group-hover:scale-100 transition-transform">
-                <Button variant="outline" className="bg-background/90 backdrop-blur border-border h-10 px-6 text-xs font-mono uppercase tracking-widest hover:bg-foreground hover:text-background rounded-none shadow-xl">
-                    Explore Story
-                </Button>
-            </div>
-            
-            {/* Bottom Info Panel */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-border/10 bg-gradient-to-t from-background via-background/95 to-transparent backdrop-blur-[2px] transform translate-y-[60%] group-hover:translate-y-0 transition-transform duration-300 ease-out">
-                <div className="flex justify-between items-end">
-                    <div>
-                        <span className="text-[10px] font-mono text-primary uppercase tracking-widest mb-1 block">Series 0{index}</span>
-                        <span className="text-sm font-bold font-mono uppercase tracking-widest text-foreground block">{label}</span>
-                        {sub && <span className="text-xs text-muted-foreground mt-1 block font-light">{sub}</span>}
-                    </div>
-                </div>
-            </div>
-
-            {/* Placeholder Icon */}
-            <motion.div 
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={{ duration: 0.5 }}
-                className="opacity-10 group-hover:opacity-20 transition-all duration-700 text-foreground"
-            >
-                <RectangleStackIcon className="w-24 h-24 stroke-1" />
-            </motion.div>
-        </motion.div>
-    )
 }

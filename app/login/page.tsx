@@ -49,7 +49,7 @@ export default function LoginPage() {
         >
             <LoginSVGComponent className="w-full h-full animate-spin-slow text-foreground" />
         </motion.div>
-        <div className="border border-border bg-card/50 backdrop-blur-2xl p-8 md:p-12 relative overflow-hidden group">
+        <div className="border border-border bg-card/50 backdrop-blur-xs p-8 md:p-12 relative overflow-hidden group">
             
             
             <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary opacity-50" />

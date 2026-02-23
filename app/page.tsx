@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 import { 
-    ArrowUpRightIcon, 
+    ArrowUpRightIcon,  
     BoltIcon, 
     CommandLineIcon, 
     SparklesIcon, 
@@ -20,6 +21,7 @@ import { PipelineStep } from "@/components/landing/PipelineStep";
 import { Badge } from "@/components/landing/Badge";
 import { GalleryItem } from "@/components/landing/GalleryItem";
 import { TextScrambleBlur } from "@/components/ui/text-scramble";
+import ScrollExpandingCircle from "@/components/ui/ScrollExpandingCircle";
 
 // --- Animation Variants ---
 
@@ -96,6 +98,7 @@ export default function LandingPage() {
              ))}
         </div>
         <div className="flex gap-4 items-center">
+            <ModeToggle />
             <Link href="/login">
                 <Button variant="ghost" className="hidden md:flex text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
                     Login
@@ -109,15 +112,18 @@ export default function LandingPage() {
         </div>
       </nav>
 
+      
+
       {/* Hero Section */}
       <main className="relative z-10 flex flex-col items-center text-center">
+        
         <motion.div
             initial={{ opacity: 0, filter: "blur(20px)" }}
             animate={{ opacity: 0.6, filter: "blur(0px)" }}
             transition={{ duration: 1.5, ease: "easeOut" }}
             className="absolute top-1/8 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[-10] w-[800px] h-[800px] pointer-events-none"
         >
-            <HeroSvgComponent props="w-full h-full animate-spin-slow text-foreground" />
+            <HeroSvgComponent props="w-full h-full text-foreground animate-spin-slow" />
         </motion.div>
 
         <section className="container mx-auto px-6 py-24 md:py-32 flex flex-col items-center relative perspective-[1000px]">
@@ -198,6 +204,7 @@ export default function LandingPage() {
                 />
             </div>
         </section>
+        
 
         {/* Pipeline Architecture Section */}
         <section id="pipeline" className="w-full border-t border-border bg-zinc-50/50 dark:bg-zinc-900/20 py-24 relative overflow-hidden">
@@ -411,6 +418,7 @@ export default function LandingPage() {
         </section>
         
       </main>
+      
 
       {/* Decorative Bottom Bar */}
       <footer className="border-t border-border/40 py-12 relative z-10 bg-background text-[10px] font-mono uppercase tracking-widest">

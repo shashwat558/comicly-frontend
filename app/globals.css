@@ -26,6 +26,7 @@
   --input: 240 6% 90%;
   --ring: 240 6% 10%;
   --radius: 0rem;
+  --expo-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark {
@@ -116,7 +117,7 @@
   }
   
   .animate-spin-slow {
-    animation: spin 30s linear infinite;
+    animation: spin 60s linear infinite;
   }
 }
 
@@ -126,5 +127,45 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+
+::view-transition-group(root) {
+  animation-duration: 1.5s;
+  animation-timing-function: var(--expo-out);
+}
+      
+::view-transition-new(root) {
+  animation-name: reveal-light;
+  animation-fill-mode: both;
+}
+
+::view-transition-old(root),
+.dark::view-transition-old(root) {
+  animation: none;
+  animation-fill-mode: both;
+  z-index: -1;
+}
+.dark::view-transition-new(root) {
+  animation-name: reveal-dark;
+  animation-fill-mode: both;
+}
+
+@keyframes reveal-dark {
+  from {
+    clip-path: polygon(50% -71%, -50% 71%, -50% 71%, 50% -71%);
+  }
+  to {
+    clip-path: polygon(50% -71%, -50% 71%, 50% 171%, 171% 50%);
+  }
+}
+
+@keyframes reveal-light {
+  from {
+    clip-path: polygon(171% 50%, 50% 171%, 50% 171%, 171% 50%);
+  }
+  to {
+    clip-path: polygon(171% 50%, 50% 171%, -50% 71%, 50% -71%);
   }
 }

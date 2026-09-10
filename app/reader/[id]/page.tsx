@@ -1,89 +1,164 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { ReaderTextPane } from "@/components/reader/ReaderTextPane";
 import { ReaderVisualPane } from "@/components/reader/ReaderVisualPane";
+import { getBook, getFrame, listPages } from "@/lib/api-client";
+import { ApiError } from "@/lib/api-client";
+import type { BookDetail } from "@/lib/comicly-types";
+import { useGeneration } from "@/lib/use-generation";
 
-// Mock Data for Demo
-const DEMO_TEXT = [
-  "The sky above the port was the color of television, tuned to a dead channel. 'It's not like I'm using,' Case heard someone say, as he shouldered his way through the crowd around the door of the Chat. 'It's like my body's developed this massive drug deficiency.' It was a Sprawl voice and a Sprawl joke. The Chatsubo was a bar for professional expatriates; you could drink there for a week and never hear two words in Japanese.",
-  "Ratz was tending bar, his prosthetic arm jerking monotonously as he filled a tray of glasses with draft Kirin. He saw Case and smiled, his teeth a webwork of East European steel and brown decay. Case found a place at the bar, between the unlikely tan on one of the uglier whores the founding father had managed to sponsor while the project was still an embryo, and a crisp, bureaucratic young type in a gray suit.",
-  "Case sat, staring into his drink. The alcohol was a cold, hard knot in his stomach. He'd been in Chiba for a month, and he still hadn't found the nerve to do what he'd come to do. He looked at his hands. They were shaking. The nerve damage was bad, but the tremors were worse when he wasn't using. He needed a fix, or he needed a job. In this city, they were often the same thing."
-];
+const PAGE_SIZE = 100;
 
-const DEMO_IMAGES = [
-  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=2670&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1605806616949-1e87b487bc2a?q=80&w=2550&auto=format&fit=crop"
-];
+export const STAGE_LABELS: Record<string, string> = {
+  queued: "Queued…",
+  reading: "Reading page…",
+  directing: "Directing scene…",
+  rendering: "Rendering frame…",
+  saving: "Saving…",
+  done: "Done",
+  error: "Failed",
+  idle: "Idle",
+};
 
 export default function ReaderPage() {
-  const [pages] = useState<string[]>(DEMO_TEXT);
+  const params = useParams();
+  const bookId = params.id as string;
+
+  const [book, setBook] = useState<BookDetail | null>(null);
+  const [pages, setPages] = useState<string[]>([]);
+  const [frames, setFrames] = useState<Record<number, string>>({});
   const [currentPage, setCurrentPage] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentImage, setCurrentImage] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const gen = useGeneration();
 
-  const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const detail = await getBook(bookId);
+        if (cancelled) return;
+        setBook(detail);
+        const all: string[] = [];
+        const total = detail.total_pages;
+        for (let p = 1; p <= Math.ceil(total / PAGE_SIZE); p++) {
+          const chunk = await listPages(bookId, p, PAGE_SIZE);
+          if (cancelled) return;
+          all.push(...chunk.map((c) => c.text));
+        }
+        if (!cancelled) setPages(all);
+      } catch (e) {
+        if (!cancelled) {
+          setLoadError(
+            e instanceof ApiError && e.status === 404
+              ? "Book not found. It may have been deleted."
+              : e instanceof Error ? e.message : "Failed to load book.",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [bookId]);
 
-  const handleSimulateGeneration = async () => {
-    if (isProcessing) return;
-    setIsProcessing(true);
-    setProgress(0);
-    setCurrentImage(null);
+  const loadCachedFrame = useCallback(
+    async (pageNo: number) => {
+      if (frames[pageNo]) return;
+      try {
+        const f = await getFrame(bookId, pageNo);
+        if (f.image_url) setFrames((prev) => ({ ...prev, [pageNo]: f.image_url as string }));
+      } catch {
+        // 404 = not generated yet, anything else we also ignore here
+      }
+    },
+    [bookId, frames],
+  );
 
-    await wait(800);
-    setProgress(20);
+  useEffect(() => {
+    if (pages.length > 0) loadCachedFrame(currentPage + 1);
+  }, [currentPage, pages.length, loadCachedFrame]);
 
-    await wait(1200);
-    setProgress(50);
-
-    await wait(1500);
-    setProgress(80);
-    
-    await wait(1000);
-    setProgress(100);
-    setCurrentImage(DEMO_IMAGES[currentPage % DEMO_IMAGES.length]);
-    setIsProcessing(false);
-  };
+  useEffect(() => {
+    if (gen.imageUrl) {
+      const pageNo = currentPage + 1;
+      setFrames((prev) => (prev[pageNo] ? prev : { ...prev, [pageNo]: gen.imageUrl as string }));
+    }
+  }, [gen.imageUrl, currentPage]);
 
   const handleNext = () => {
     if (currentPage < pages.length - 1) {
-        setCurrentPage(c => c + 1);
-        setCurrentImage(null);
+      setCurrentPage((c) => c + 1);
+      gen.reset();
     }
   };
 
   const handlePrev = () => {
     if (currentPage > 0) {
-        setCurrentPage(c => c - 1);
-        setCurrentImage(null);
+      setCurrentPage((c) => c - 1);
+      gen.reset();
     }
   };
 
+  const handleVisualize = () => {
+    gen.run(bookId, currentPage + 1);
+  };
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full bg-background text-foreground flex items-center justify-center font-mono text-sm text-muted-foreground animate-pulse">
+        Loading book…
+      </div>
+    );
+  }
+
+  if (loadError || pages.length === 0) {
+    return (
+      <div className="h-screen w-full bg-background text-foreground flex flex-col items-center justify-center gap-4">
+        <p className="font-mono text-sm text-muted-foreground">{loadError ?? "This book has no readable text."}</p>
+        <Link href="/reader" className="font-mono text-xs uppercase tracking-widest underline underline-offset-4">
+          Back to library
+        </Link>
+      </div>
+    );
+  }
+
+  const pageNo = currentPage + 1;
+  const currentImage = gen.imageUrl ?? frames[pageNo] ?? null;
+  const busy = gen.status !== "idle" && gen.status !== "done" && gen.status !== "error";
+
   return (
     <div className="h-screen w-full bg-background text-foreground flex overflow-hidden font-sans selection:bg-primary/20">
-      
-      {/* Background Decor */}
+
       <div className="fixed inset-0 bg-grid-pattern opacity-5 pointer-events-none z-0" />
-      
-      <ReaderTextPane 
+
+      <ReaderTextPane
         pages={pages}
         currentPage={currentPage}
-        isProcessing={isProcessing}
+        isProcessing={busy}
         currentImage={currentImage}
+        genError={gen.status === "error" ? gen.error : null}
+        bookTitle={book?.title}
         onPrev={handlePrev}
         onNext={handleNext}
-        onSimulate={handleSimulateGeneration}
+        onVisualize={handleVisualize}
       />
 
-      <ReaderVisualPane 
+      <ReaderVisualPane
         currentImage={currentImage}
-        isProcessing={isProcessing}
-        progress={progress}
+        isProcessing={busy}
+        progress={gen.progress}
+        stageLabel={STAGE_LABELS[gen.status] ?? gen.status}
         currentPageText={pages[currentPage]}
       />
-      
+
     </div>
   );
 }

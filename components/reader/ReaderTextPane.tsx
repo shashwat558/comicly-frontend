@@ -11,12 +11,15 @@ interface ReaderTextPaneProps {
     currentPage: number;
     isProcessing: boolean;
     currentImage: string | null;
+    genError: string | null;
+    bookTitle?: string;
     onPrev: () => void;
     onNext: () => void;
-    onSimulate: () => void;
+    onVisualize: () => void;
 }
 
-export function ReaderTextPane({ pages, currentPage, isProcessing, currentImage, onPrev, onNext, onSimulate }: ReaderTextPaneProps) {
+export function ReaderTextPane({ pages, currentPage, isProcessing, currentImage, genError, bookTitle, onPrev, onNext, onVisualize }: ReaderTextPaneProps) {
+    const showRetry = !!genError && !currentImage;
     return (
         <div className="w-full lg:w-[40%] border-r border-border bg-background/50 backdrop-blur-sm flex flex-col relative z-10 flex-shrink-0">
         
@@ -41,7 +44,7 @@ export function ReaderTextPane({ pages, currentPage, isProcessing, currentImage,
             <div className="max-w-xl mx-auto">
                 <div className="mb-8 flex items-center justify-between text-xs font-mono text-muted-foreground uppercase tracking-widest opacity-50">
                      <span>Segment 0{currentPage + 1}</span>
-                     <span>Raw Input Stream</span>
+                     <span>{bookTitle ?? "Raw Input Stream"}</span>
                 </div>
                 
                 <AnimatePresence mode="wait">
@@ -87,12 +90,14 @@ export function ReaderTextPane({ pages, currentPage, isProcessing, currentImage,
                 </Button>
             </div>
 
-            <Button 
-                onClick={onSimulate}
-                disabled={isProcessing || !!currentImage}
+            <Button
+                onClick={onVisualize}
+                disabled={isProcessing || (!!currentImage && !showRetry)}
                 className={`h-10 px-8 font-mono text-xs uppercase tracking-widest rounded-none transition-all flex items-center gap-2 shadow-sm
-                    ${!!currentImage 
-                        ? 'bg-secondary text-muted-foreground cursor-not-allowed border border-transparent' 
+                    ${!!currentImage && !showRetry
+                        ? 'bg-secondary text-muted-foreground cursor-not-allowed border border-transparent'
+                        : showRetry
+                        ? 'bg-red-500 text-white hover:bg-red-600'
                         : 'bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 hover:scale-[1.02]'
                     }
                 `}
@@ -102,10 +107,15 @@ export function ReaderTextPane({ pages, currentPage, isProcessing, currentImage,
                         <span className="w-2 h-2 bg-background rounded-full animate-bounce" />
                          Processing
                     </>
-                ) : !!currentImage ? (
+                ) : !!currentImage && !showRetry ? (
                     <>
                         <span className="w-2 h-2 bg-emerald-500 rounded-full" />
                         Rendered
+                    </>
+                ) : showRetry ? (
+                    <>
+                        <SparklesIcon className="w-4 h-4" />
+                        Retry
                     </>
                 ) : (
                     <>
@@ -114,6 +124,9 @@ export function ReaderTextPane({ pages, currentPage, isProcessing, currentImage,
                     </>
                 )}
             </Button>
+            {showRetry && (
+                <p className="font-mono text-[10px] text-red-500 max-w-[220px] leading-relaxed">{genError}</p>
+            )}
         </div>
       </div>
     )

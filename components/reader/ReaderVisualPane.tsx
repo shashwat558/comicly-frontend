@@ -7,10 +7,11 @@ interface ReaderVisualPaneProps {
     currentImage: string | null;
     isProcessing: boolean;
     progress: number;
+    stageLabel: string;
     currentPageText: string;
 }
 
-export function ReaderVisualPane({ currentImage, isProcessing, progress, currentPageText }: ReaderVisualPaneProps) {
+export function ReaderVisualPane({ currentImage, isProcessing, progress, stageLabel, currentPageText }: ReaderVisualPaneProps) {
     return (
         <div className="hidden lg:flex flex-1 flex-col bg-stone-50/50 dark:bg-stone-900/20 relative z-0">
          
@@ -47,10 +48,10 @@ export function ReaderVisualPane({ currentImage, isProcessing, progress, current
             {isProcessing && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/10 backdrop-blur-[2px] z-10 w-full h-full">
                      <div className="w-64 space-y-4">
-                         <div className="flex justify-between text-[10px] font-mono uppercase tracking-widest text-foreground/70">
-                             <span>Generating...</span>
-                             <span>{progress}%</span>
-                         </div>
+                          <div className="flex justify-between text-[10px] font-mono uppercase tracking-widest text-foreground/70">
+                              <span>{stageLabel}</span>
+                              <span>{progress}%</span>
+                          </div>
                          <div className="h-1 w-full bg-secondary overflow-hidden">
                              <motion.div 
                                 className="h-full bg-primary"

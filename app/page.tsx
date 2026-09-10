@@ -22,6 +22,7 @@ import { Badge } from "@/components/landing/Badge";
 import { GalleryItem } from "@/components/landing/GalleryItem";
 import { TextScrambleBlur } from "@/components/ui/text-scramble";
 import ScrollExpandingCircle from "@/components/ui/ScrollExpandingCircle";
+import LoginSVGComponent from "@/components/ui/LoginSVGComponent";
 
 // --- Animation Variants ---
 
@@ -204,6 +205,8 @@ export default function LandingPage() {
                 />
             </div>
         </section>
+W
+        
         
 
         {/* Pipeline Architecture Section */}
@@ -277,7 +280,7 @@ export default function LandingPage() {
             </div>
         </section>
 
-        {/* Gallery / Capabilities Section */}
+
         <section id="output" className="w-full py-24 border-t border-border">
             <div className="container mx-auto px-6 mb-12">
                  <div className="flex items-center justify-between mb-8">
@@ -317,18 +320,21 @@ export default function LandingPage() {
                     sub="Immersive neon-lit cityscape"
                     color="bg-purple-500/5 hover:bg-purple-500/10" 
                     index={1}
+                    image="/landing-example1.png"
                  />
                  <GalleryItem 
                     label="DRAGON'S KEEP" 
                     sub="Epic scale, magical atmosphere"
                     color="bg-amber-500/5 hover:bg-amber-500/10" 
                     index={2}
+                    image="/landing-example2.png"
                  />
                  <GalleryItem 
                     label="MIDNIGHT MYSTERY" 
                     sub="Shadowy figures, rain-slicked streets"
                     color="bg-slate-500/5 hover:bg-slate-500/10" 
                     index={3}
+                    image="/landing-example4.png"
                  />
                  <GalleryItem 
                     label="GARDEN OF TOMORROW" 
@@ -336,6 +342,7 @@ export default function LandingPage() {
                     color="bg-emerald-500/5 hover:bg-emerald-500/10" 
                     className="hidden lg:flex" 
                     index={4}
+                    image="/landing-example3.png"
                  />
             </motion.div>
         </section>

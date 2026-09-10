@@ -24,12 +24,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { ApiError, deleteBook, listBooks, uploadBook } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth";
 import type { BookListItem } from "@/lib/comicly-types";
 
 const MAX_MB = 50;
 
 export default function DashboardPage() {
     const router = useRouter();
+    const { user, logout } = useAuth();
     const [books, setBooks] = useState<BookListItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -85,7 +87,10 @@ export default function DashboardPage() {
                         {loadError ? "SYSTEM: OFFLINE" : "SYSTEM: ONLINE"}
                     </span>
                     <div className="h-4 w-px bg-border" />
-                    <span>USER: SHASHWAT</span>
+                    <span className="hidden sm:inline">USER: {(user?.email ?? "—").toUpperCase()}</span>
+                    <button onClick={logout} className="hover:text-foreground transition-colors uppercase tracking-widest">
+                        Logout
+                    </button>
                 </div>
             </header>
 

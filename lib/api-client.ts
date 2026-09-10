@@ -1,4 +1,5 @@
 import type {
+  AuthUser,
   BookDetail,
   BookListItem,
   CharacterOut,
@@ -6,6 +7,7 @@ import type {
   GenerateResponse,
   JobEvent,
   PageOut,
+  TokenResponse,
 } from "./comicly-types";
 
 const BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
@@ -18,12 +20,42 @@ export class ApiError extends Error {
   }
 }
 
+const TOKEN_KEY = "comicly_token";
+
+export function getToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // private mode etc, nothing to clear
+  }
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = typeof window === "undefined" ? null : getToken();
+  const headers = new Headers(init?.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
   let res: Response;
   try {
-    res = await fetch(`${BASE}${path}`, init);
+    res = await fetch(`${BASE}${path}`, { ...init, headers });
   } catch {
     throw new ApiError(0, "Backend unreachable. Is the API running?");
+  }
+  if (res.status === 401 && token && typeof window !== "undefined") {
+    // session expired mid-use -> drop it and send them to login
+    clearToken();
+    if (!window.location.pathname.startsWith("/login")) window.location.href = "/login";
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -101,7 +133,9 @@ export function subscribeJob(
   onEvent: (ev: JobEvent) => void,
   onStreamError: () => void,
 ): () => void {
-  const es = new EventSource(`${BASE}/api/v1/jobs/${jobId}/stream`);
+  // EventSource can't set headers, backend accepts ?token= on this route
+  const token = typeof window === "undefined" ? "" : getToken() ?? "";
+  const es = new EventSource(`${BASE}/api/v1/jobs/${jobId}/stream?token=${encodeURIComponent(token)}`);
   const handler = (e: MessageEvent) => {
     try {
       onEvent(JSON.parse(e.data) as JobEvent);
@@ -115,4 +149,24 @@ export function subscribeJob(
     onStreamError();
   };
   return () => es.close();
+}
+
+export function signup(email: string, password: string): Promise<AuthUser> {
+  return req<AuthUser>("/api/v1/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export function login(email: string, password: string): Promise<TokenResponse> {
+  return req<TokenResponse>("/api/v1/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export function me(): Promise<AuthUser> {
+  return req<AuthUser>("/api/v1/auth/me");
 }

@@ -52,6 +52,17 @@ export interface GenerateResponse {
   status: string;
 }
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  created_at: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
 export type JobStage =
   | "queued"
   | "reading"

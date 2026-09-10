@@ -1,30 +1,60 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
+import { ApiError } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth";
 import LoginSVGComponent from "@/components/ui/LoginSVGComponent";
 
+type Mode = "login" | "signup";
+
 export default function LoginPage() {
+  const { login, signup } = useAuth();
+  const router = useRouter();
+  const [mode, setMode] = useState<Mode>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (mode === "login") await login(email.trim(), password);
+      else await signup(email.trim(), password);
+      router.push("/reader");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans relative flex items-center justify-center overflow-hidden selection:bg-primary/20">
-        
-      
+
+
       {/* Background Patterns */}
       <div className="fixed inset-0 bg-grid-pattern z-0 pointer-events-none" />
       <div className="fixed inset-0 bg-gradient-to-br from-background via-transparent to-background z-0 pointer-events-none" />
 
       {/* Decorative Gradient Blob */}
-      <motion.div 
-        animate={{ 
-            opacity: [0.3, 0.5, 0.3], 
+      <motion.div
+        animate={{
+            opacity: [0.3, 0.5, 0.3],
             scale: [1, 1.1, 1],
         }}
         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 blur-[100px] rounded-full pointer-events-none z-0" 
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 blur-[100px] rounded-full pointer-events-none z-0"
       />
 
       {/* Back Link */}
@@ -35,7 +65,7 @@ export default function LoginPage() {
             <span className="text-xs font-mono uppercase tracking-widest hidden md:inline-block">Return to Base</span>
       </Link>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -50,8 +80,8 @@ export default function LoginPage() {
             <LoginSVGComponent className="w-full h-full animate-spin-slow text-foreground" />
         </motion.div>
         <div className="border border-border bg-card/50 backdrop-blur-xs p-8 md:p-12 relative overflow-hidden group">
-            
-            
+
+
             <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary opacity-50" />
             <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-primary opacity-50" />
             <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-primary opacity-50" />
@@ -67,65 +97,61 @@ export default function LoginPage() {
                 </p>
             </div>
 
-            <form className="space-y-6">
+            <div className="grid grid-cols-2 gap-0 mb-8 border border-border">
+                {(["login", "signup"] as Mode[]).map((m) => (
+                    <button
+                        key={m}
+                        type="button"
+                        onClick={() => { setMode(m); setError(null); }}
+                        className={`h-10 text-xs font-mono uppercase tracking-widest transition-colors ${
+                            mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        {m === "login" ? "Authenticate" : "New Operator"}
+                    </button>
+                ))}
+            </div>
+
+            <form className="space-y-6" onSubmit={submit}>
                 <div className="space-y-2">
                     <Label htmlFor="email" className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
                         User Handle / Email
                     </Label>
-                    <Input 
-                        id="email" 
-                        type="email" 
-                        placeholder="OPERATOR@COMICLY.SYS" 
-                        className="bg-background/50 border-border font-mono text-sm placeholder:text-muted-foreground/30 focus-visible:ring-primary/20 h-12 rounded-none"
-                    />
-                </div>
-                
-                <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                        <Label htmlFor="password" className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                            Passcode
-                        </Label>
-                        <Link href="#" className="text-[10px] font-mono uppercase tracking-widest text-primary hover:underline">
-                            Reset Protocol?
-                        </Link>
-                    </div>
-                    <Input 
-                        id="password" 
-                        type="password" 
-                        placeholder="••••••••••••" 
+                    <Input
+                        id="email"
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="OPERATOR@COMICLY.SYS"
                         className="bg-background/50 border-border font-mono text-sm placeholder:text-muted-foreground/30 focus-visible:ring-primary/20 h-12 rounded-none"
                     />
                 </div>
 
-                <Button className="w-full h-12 text-sm font-mono uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 rounded-none transition-all shadow-lg hover:shadow-primary/20 mt-2">
-                    Authenticate
+                <div className="space-y-2">
+                    <Label htmlFor="password" className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                        Passcode {mode === "signup" && <span className="opacity-60">(min 8 chars)</span>}
+                    </Label>
+                    <Input
+                        id="password"
+                        type="password"
+                        required
+                        minLength={mode === "signup" ? 8 : 1}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="bg-background/50 border-border font-mono text-sm placeholder:text-muted-foreground/30 focus-visible:ring-primary/20 h-12 rounded-none"
+                    />
+                </div>
+
+                {error && <p className="font-mono text-xs text-red-500">{error}</p>}
+
+                <Button disabled={busy} className="w-full h-12 text-sm font-mono uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 rounded-none transition-all shadow-lg hover:shadow-primary/20 mt-2">
+                    {busy ? "Working…" : mode === "login" ? "Authenticate" : "Request Clearance"}
                 </Button>
             </form>
-
-            <div className="mt-8 pt-8 border-t border-border text-center">
-                <p className="text-xs text-muted-foreground mb-4 font-mono">
-                    // OR AUTHENTICATE VIA EXTERNAL LINK
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" className="h-10 text-xs font-mono uppercase tracking-wider border-border hover:bg-secondary rounded-none">
-                        Github
-                    </Button>
-                    <Button variant="outline" className="h-10 text-xs font-mono uppercase tracking-wider border-border hover:bg-secondary rounded-none">
-                        Google
-                    </Button>
-                </div>
-            </div>
-
-            <div className="mt-8 text-center">
-                <p className="text-xs text-muted-foreground">
-                    New Operator?{" "}
-                    <Link href="/register" className="text-primary hover:underline font-mono uppercase tracking-wider">
-                        Request Clearance
-                    </Link>
-                </p>
-            </div>
         </div>
-        
+
         {/* Decorative Status Line */}
         <div className="mt-4 flex justify-between text-[10px] font-mono text-muted-foreground/50 uppercase tracking-widest px-1">
             <span>Secure Connection</span>

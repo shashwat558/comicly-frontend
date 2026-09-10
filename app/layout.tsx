@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme-provider"
+import { AuthProvider } from "@/lib/auth"
 import "./globals.css"
 
 const geist = Geist({
@@ -51,7 +52,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
-            {children}
+            <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
         <Analytics />
       </body>

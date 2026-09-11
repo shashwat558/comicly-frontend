@@ -21,7 +21,6 @@ import { PipelineStep } from "@/components/landing/PipelineStep";
 import { Badge } from "@/components/landing/Badge";
 import { GalleryItem } from "@/components/landing/GalleryItem";
 import { TextScrambleBlur } from "@/components/ui/text-scramble";
-import ScrollExpandingCircle from "@/components/ui/ScrollExpandingCircle";
 import LoginSVGComponent from "@/components/ui/LoginSVGComponent";
 
 // --- Animation Variants ---
@@ -205,9 +204,6 @@ export default function LandingPage() {
                 />
             </div>
         </section>
-W
-        
-        
 
         {/* Pipeline Architecture Section */}
         <section id="pipeline" className="w-full border-t border-border bg-zinc-50/50 dark:bg-zinc-900/20 py-24 relative overflow-hidden">

@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { PdfPane } from "@/components/reader/PdfPane";
 import { ReaderTextPane } from "@/components/reader/ReaderTextPane";
 import { ReaderVisualPane } from "@/components/reader/ReaderVisualPane";
-import { getBook, getFrame, listPages } from "@/lib/api-client";
+import { getBook, getFrame, getSourceUrl, listPages } from "@/lib/api-client";
 import { ApiError } from "@/lib/api-client";
-import type { BookDetail } from "@/lib/comicly-types";
+import type { BookDetail, PageOut } from "@/lib/comicly-types";
 import { useGeneration } from "@/lib/use-generation";
 
 const PAGE_SIZE = 100;
@@ -28,11 +29,12 @@ export default function ReaderPage() {
   const bookId = params.id as string;
 
   const [book, setBook] = useState<BookDetail | null>(null);
-  const [pages, setPages] = useState<string[]>([]);
+  const [pages, setPages] = useState<PageOut[]>([]);
   const [frames, setFrames] = useState<Record<number, string>>({});
   const [currentPage, setCurrentPage] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const gen = useGeneration();
 
   useEffect(() => {
@@ -44,14 +46,23 @@ export default function ReaderPage() {
         const detail = await getBook(bookId);
         if (cancelled) return;
         setBook(detail);
-        const all: string[] = [];
+        const all: PageOut[] = [];
         const total = detail.total_pages;
         for (let p = 1; p <= Math.ceil(total / PAGE_SIZE); p++) {
           const chunk = await listPages(bookId, p, PAGE_SIZE);
           if (cancelled) return;
-          all.push(...chunk.map((c) => c.text));
+          all.push(...chunk);
         }
-        if (!cancelled) setPages(all);
+        if (cancelled) return;
+        setPages(all);
+        if (detail.kind === "pdf" && detail.has_source) {
+          try {
+            const url = await getSourceUrl(bookId);
+            if (!cancelled) setSourceUrl(url);
+          } catch {
+            // no source, falls back to text pane below
+          }
+        }
       } catch (e) {
         if (!cancelled) {
           setLoadError(
@@ -68,6 +79,12 @@ export default function ReaderPage() {
       cancelled = true;
     };
   }, [bookId]);
+
+  useEffect(() => {
+    return () => {
+      if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    };
+  }, [sourceUrl]);
 
   const loadCachedFrame = useCallback(
     async (pageNo: number) => {
@@ -133,30 +150,48 @@ export default function ReaderPage() {
   const pageNo = currentPage + 1;
   const currentImage = gen.imageUrl ?? frames[pageNo] ?? null;
   const busy = gen.status !== "idle" && gen.status !== "done" && gen.status !== "error";
+  const showPdf = book?.kind === "pdf" && !!sourceUrl;
+  const pdfPage = pages[currentPage]?.pdf_page ?? pageNo;
 
   return (
     <div className="h-screen w-full bg-background text-foreground flex overflow-hidden font-sans selection:bg-primary/20">
 
       <div className="fixed inset-0 bg-grid-pattern opacity-5 pointer-events-none z-0" />
 
-      <ReaderTextPane
-        pages={pages}
-        currentPage={currentPage}
-        isProcessing={busy}
-        currentImage={currentImage}
-        genError={gen.status === "error" ? gen.error : null}
-        bookTitle={book?.title}
-        onPrev={handlePrev}
-        onNext={handleNext}
-        onVisualize={handleVisualize}
-      />
+      {showPdf ? (
+        <PdfPane
+          fileUrl={sourceUrl as string}
+          pdfPage={pdfPage}
+          currentSegment={pageNo}
+          totalSegments={pages.length}
+          isProcessing={busy}
+          currentImage={currentImage}
+          genError={gen.status === "error" ? gen.error : null}
+          bookTitle={book?.title}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          onVisualize={handleVisualize}
+        />
+      ) : (
+        <ReaderTextPane
+          pages={pages.map((p) => p.text)}
+          currentPage={currentPage}
+          isProcessing={busy}
+          currentImage={currentImage}
+          genError={gen.status === "error" ? gen.error : null}
+          bookTitle={book?.title}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          onVisualize={handleVisualize}
+        />
+      )}
 
       <ReaderVisualPane
         currentImage={currentImage}
         isProcessing={busy}
         progress={gen.progress}
         stageLabel={STAGE_LABELS[gen.status] ?? gen.status}
-        currentPageText={pages[currentPage]}
+        currentPageText={pages[currentPage]?.text ?? ""}
       />
 
     </div>

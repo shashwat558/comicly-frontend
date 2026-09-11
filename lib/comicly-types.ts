@@ -18,12 +18,15 @@ export interface BookListItem {
 
 export interface BookDetail extends BookListItem {
   style_lock: StyleLock | null;
+  kind: string;
+  has_source: boolean;
 }
 
 export interface PageOut {
   page_no: number;
   text: string;
   tokens: number;
+  pdf_page: number | null;
 }
 
 export interface FrameOut {

@@ -72,6 +72,22 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+export async function getSourceUrl(bookId: string): Promise<string> {
+  const token = typeof window === "undefined" ? null : getToken();
+  const headers = new Headers();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/api/v1/books/${bookId}/source`, { headers });
+  } catch {
+    throw new ApiError(0, "Backend unreachable. Is the API running?");
+  }
+  if (res.status === 404) throw new ApiError(404, "No source file stored for this book.");
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
 export function uploadBook(file: File, title: string, author: string): Promise<BookDetail> {
   const form = new FormData();
   form.append("file", file);

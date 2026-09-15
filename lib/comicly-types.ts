@@ -36,6 +36,12 @@ export interface FrameOut {
   seed: number | null;
   reader_out: Record<string, unknown> | null;
   director_out: Record<string, unknown> | null;
+  quality?: string;
+  drift_score?: number | null;
+  critic_out?: Record<string, unknown> | null;
+  panel_layout?: Record<string, unknown> | null;
+  retry_count?: number;
+  flagged?: boolean;
 }
 
 export interface CharacterOut {
@@ -44,6 +50,8 @@ export interface CharacterOut {
   traits: string[];
   visual_anchors: string[];
   reference_image_url: string | null;
+  sheet_image_url?: string | null;
+  sheet_version?: number;
   first_page: number;
   last_seen_page: number;
 }
@@ -70,7 +78,11 @@ export type JobStage =
   | "queued"
   | "reading"
   | "directing"
+  | "casting"
+  | "drafting"
+  | "critiquing"
   | "rendering"
+  | "hero"
   | "saving"
   | "done"
   | "error";

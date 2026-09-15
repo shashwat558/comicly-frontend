@@ -131,12 +131,23 @@ export function listCharacters(bookId: string): Promise<CharacterOut[]> {
 export function generatePage(
   bookId: string,
   pageNo: number,
-  opts?: { force?: boolean },
+  opts?: { force?: boolean; quality?: "draft" | "pro" | "auto"; panels?: number },
 ): Promise<GenerateResponse> {
   return req<GenerateResponse>(`/api/v1/books/${bookId}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ page_no: pageNo, force: opts?.force ?? false }),
+    body: JSON.stringify({
+      page_no: pageNo,
+      force: opts?.force ?? false,
+      quality: opts?.quality ?? "auto",
+      panels: opts?.panels ?? 1,
+    }),
+  });
+}
+
+export function enhanceFrame(bookId: string, pageNo: number): Promise<GenerateResponse> {
+  return req<GenerateResponse>(`/api/v1/books/${bookId}/frames/${pageNo}/enhance`, {
+    method: "POST",
   });
 }
 

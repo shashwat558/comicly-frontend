@@ -1,19 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { generatePage, getJob, subscribeJob } from "./api-client";
+import { enhanceFrame, generatePage, getJob, subscribeJob } from "./api-client";
 import type { JobStage } from "./comicly-types";
 
 export type GenStatus = JobStage | "idle";
 export const POLL_MS = 2000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
+interface RunOpts {
+  force?: boolean;
+  quality?: "draft" | "pro" | "auto";
+  panels?: number;
+}
+
 interface GenState {
   status: GenStatus;
   progress: number;
   imageUrl: string | null;
   error: string | null;
-  run: (bookId: string, pageNo: number) => Promise<void>;
+  run: (bookId: string, pageNo: number, opts?: RunOpts) => Promise<void>;
+  enhance: (bookId: string, pageNo: number) => Promise<void>;
   reset: () => void;
 }
 
@@ -73,23 +80,8 @@ export function useGeneration(): GenState {
     [apply],
   );
 
-  const run = useCallback(
-    async (bookId: string, pageNo: number) => {
-      setStatus("queued");
-      setProgress(0);
-      setImageUrl(null);
-      setError(null);
-      let jobId: string;
-      try {
-        const res = await generatePage(bookId, pageNo);
-        jobId = res.job_id;
-      } catch (e) {
-        if (!alive.current) return;
-        setError(e instanceof Error ? e.message : "Failed to start generation.");
-        setStatus("error");
-        return;
-      }
-
+  const startJob = useCallback(
+    (jobId: string) => {
       let stopPoll: (() => void) | null = null;
       const cleanup = () => stopPoll?.();
       const stopStream = subscribeJob(
@@ -114,6 +106,47 @@ export function useGeneration(): GenState {
     [apply, poll],
   );
 
+  const run = useCallback(
+    async (bookId: string, pageNo: number, opts?: RunOpts) => {
+      setStatus("queued");
+      setProgress(0);
+      setImageUrl(null);
+      setError(null);
+      let jobId: string;
+      try {
+        const res = await generatePage(bookId, pageNo, opts);
+        jobId = res.job_id;
+      } catch (e) {
+        if (!alive.current) return;
+        setError(e instanceof Error ? e.message : "Failed to start generation.");
+        setStatus("error");
+        return;
+      }
+      startJob(jobId);
+    },
+    [startJob],
+  );
+
+  const enhance = useCallback(
+    async (bookId: string, pageNo: number) => {
+      setStatus("queued");
+      setProgress(0);
+      setError(null);
+      let jobId: string;
+      try {
+        const res = await enhanceFrame(bookId, pageNo);
+        jobId = res.job_id;
+      } catch (e) {
+        if (!alive.current) return;
+        setError(e instanceof Error ? e.message : "Failed to start enhance.");
+        setStatus("error");
+        return;
+      }
+      startJob(jobId);
+    },
+    [startJob],
+  );
+
   const reset = useCallback(() => {
     setStatus(initial.status);
     setProgress(initial.progress);
@@ -121,5 +154,5 @@ export function useGeneration(): GenState {
     setError(initial.error);
   }, []);
 
-  return { status, progress, imageUrl, error, run, reset };
+  return { status, progress, imageUrl, error, run, enhance, reset };
 }

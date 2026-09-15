@@ -8,7 +8,7 @@ import { ReaderTextPane } from "@/components/reader/ReaderTextPane";
 import { ReaderVisualPane } from "@/components/reader/ReaderVisualPane";
 import { getBook, getFrame, getSourceUrl, listPages } from "@/lib/api-client";
 import { ApiError } from "@/lib/api-client";
-import type { BookDetail, PageOut } from "@/lib/comicly-types";
+import type { BookDetail, FrameOut, PageOut } from "@/lib/comicly-types";
 import { useGeneration } from "@/lib/use-generation";
 
 const PAGE_SIZE = 100;
@@ -17,7 +17,11 @@ export const STAGE_LABELS: Record<string, string> = {
   queued: "Queued…",
   reading: "Reading page…",
   directing: "Directing scene…",
+  casting: "Casting characters…",
+  drafting: "Drafting frame…",
+  critiquing: "Critiquing draft…",
   rendering: "Rendering frame…",
+  hero: "Hero pass…",
   saving: "Saving…",
   done: "Done",
   error: "Failed",
@@ -31,6 +35,9 @@ export default function ReaderPage() {
   const [book, setBook] = useState<BookDetail | null>(null);
   const [pages, setPages] = useState<PageOut[]>([]);
   const [frames, setFrames] = useState<Record<number, string>>({});
+  const [frameMeta, setFrameMeta] = useState<Record<number, FrameOut>>({});
+  const [qualitySel, setQualitySel] = useState<"draft" | "pro" | "auto">("auto");
+  const [panelsSel, setPanelsSel] = useState(1);
   const [currentPage, setCurrentPage] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,6 +98,7 @@ export default function ReaderPage() {
       if (frames[pageNo]) return;
       try {
         const f = await getFrame(bookId, pageNo);
+        setFrameMeta((prev) => ({ ...prev, [pageNo]: f }));
         if (f.image_url) setFrames((prev) => ({ ...prev, [pageNo]: f.image_url as string }));
       } catch {
         // 404 = not generated yet, anything else we also ignore here
@@ -110,6 +118,18 @@ export default function ReaderPage() {
     }
   }, [gen.imageUrl, currentPage]);
 
+  useEffect(() => {
+    if (gen.status !== "done") return;
+    const pageNo = currentPage + 1;
+    setFrames((prev) => {
+      if (gen.imageUrl) return { ...prev, [pageNo]: gen.imageUrl as string };
+      return prev;
+    });
+    getFrame(bookId, pageNo)
+      .then((f) => setFrameMeta((prev) => ({ ...prev, [pageNo]: f })))
+      .catch(() => {});
+  }, [gen.status, gen.imageUrl, bookId, currentPage]);
+
   const handleNext = () => {
     if (currentPage < pages.length - 1) {
       setCurrentPage((c) => c + 1);
@@ -125,7 +145,11 @@ export default function ReaderPage() {
   };
 
   const handleVisualize = () => {
-    gen.run(bookId, currentPage + 1);
+    gen.run(bookId, currentPage + 1, { quality: qualitySel, panels: panelsSel });
+  };
+
+  const handleEnhance = () => {
+    gen.enhance(bookId, currentPage + 1);
   };
 
   if (loading) {
@@ -150,6 +174,7 @@ export default function ReaderPage() {
   const pageNo = currentPage + 1;
   const currentImage = gen.imageUrl ?? frames[pageNo] ?? null;
   const busy = gen.status !== "idle" && gen.status !== "done" && gen.status !== "error";
+  const meta = frameMeta[pageNo] ?? null;
   const showPdf = book?.kind === "pdf" && !!sourceUrl;
   const pdfPage = pages[currentPage]?.pdf_page ?? pageNo;
 
@@ -192,6 +217,20 @@ export default function ReaderPage() {
         progress={gen.progress}
         stageLabel={STAGE_LABELS[gen.status] ?? gen.status}
         currentPageText={pages[currentPage]?.text ?? ""}
+        quality={meta?.quality ?? null}
+        driftScore={meta?.drift_score ?? null}
+        flagged={meta?.flagged ?? false}
+        panelCount={
+          typeof meta?.panel_layout?.panel_count === "number"
+            ? (meta.panel_layout.panel_count as number)
+            : null
+        }
+        qualitySel={qualitySel}
+        onQualityChange={setQualitySel}
+        panelsSel={panelsSel}
+        onPanelsChange={setPanelsSel}
+        canEnhance={!!frames[pageNo] && !busy && (meta?.quality ?? "draft") !== "pro"}
+        onEnhance={handleEnhance}
       />
 
     </div>
